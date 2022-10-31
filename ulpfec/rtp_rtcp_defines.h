@@ -14,6 +14,8 @@
 #include <stddef.h>
 #include <list>
 #include <vector>
+#include <stdint.h>
+#include <string.h>
 
 //#include "absl/types/variant.h"
 //#include "api/audio_codecs/audio_format.h"

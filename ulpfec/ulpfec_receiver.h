@@ -12,6 +12,7 @@
 #define MODULES_RTP_RTCP_INCLUDE_ULPFEC_RECEIVER_H_
 
 #include "ulpfec/rtp_rtcp_defines.h"
+#include "ulpfec/rtp_headers.h"
 
 namespace webrtc {
 

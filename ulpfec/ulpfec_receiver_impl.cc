@@ -8,16 +8,17 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/rtp_rtcp/source/ulpfec_receiver_impl.h"
+#include "ulpfec/ulpfec_receiver_impl.h"
 
 #include <memory>
 #include <utility>
 
-#include "modules/rtp_rtcp/source/byte_io.h"
-#include "modules/rtp_rtcp/source/rtp_receiver_video.h"
+#include "ulpfec/byte_io.h"
+// #include "ulpfec/rtp_receiver_video.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/logging.h"
-#include "system_wrappers/include/clock.h"
+// #include "rtc_base/logging.h"
+// #include "system_wrappers/include/clock.h"
+#include "ulpfec/rtp_headers.h"
 
 namespace webrtc {
 
@@ -38,7 +39,7 @@ UlpfecReceiverImpl::~UlpfecReceiverImpl() {
 }
 
 FecPacketCounter UlpfecReceiverImpl::GetPacketCounter() const {
-  rtc::CritScope cs(&crit_sect_);
+  // rtc::CritScope cs(&crit_sect_);
   return packet_counter_;
 }
 
@@ -76,22 +77,22 @@ int32_t UlpfecReceiverImpl::AddReceivedRedPacket(
     size_t packet_length,
     uint8_t ulpfec_payload_type) {
   if (header.ssrc != ssrc_) {
-    RTC_LOG(LS_WARNING)
-        << "Received RED packet with different SSRC than expected; dropping.";
+    // RTC_LOG(LS_WARNING)
+    //     << "Received RED packet with different SSRC than expected; dropping.";
     return -1;
   }
   if (packet_length > IP_PACKET_SIZE) {
-    RTC_LOG(LS_WARNING) << "Received RED packet with length exceeds maximum IP "
-                           "packet size; dropping.";
+    // RTC_LOG(LS_WARNING) << "Received RED packet with length exceeds maximum IP "
+    //                        "packet size; dropping.";
     return -1;
   }
-  rtc::CritScope cs(&crit_sect_);
+  // rtc::CritScope cs(&crit_sect_);
 
   uint8_t red_header_length = 1;
   size_t payload_data_length = packet_length - header.headerLength;
 
   if (payload_data_length == 0) {
-    RTC_LOG(LS_WARNING) << "Corrupt/truncated FEC packet.";
+    // RTC_LOG(LS_WARNING) << "Corrupt/truncated FEC packet.";
     return -1;
   }
 
@@ -111,7 +112,7 @@ int32_t UlpfecReceiverImpl::AddReceivedRedPacket(
     // f bit set in RED header, i.e. there are more than one RED header blocks.
     red_header_length = 4;
     if (payload_data_length < red_header_length + 1u) {
-      RTC_LOG(LS_WARNING) << "Corrupt/truncated FEC packet.";
+      // RTC_LOG(LS_WARNING) << "Corrupt/truncated FEC packet.";
       return -1;
     }
 
@@ -120,7 +121,7 @@ int32_t UlpfecReceiverImpl::AddReceivedRedPacket(
     timestamp_offset += incoming_rtp_packet[header.headerLength + 2];
     timestamp_offset = timestamp_offset >> 2;
     if (timestamp_offset != 0) {
-      RTC_LOG(LS_WARNING) << "Corrupt payload found.";
+      // RTC_LOG(LS_WARNING) << "Corrupt payload found.";
       return -1;
     }
 
@@ -129,20 +130,20 @@ int32_t UlpfecReceiverImpl::AddReceivedRedPacket(
 
     // Check next RED header block.
     if (incoming_rtp_packet[header.headerLength + 4] & 0x80) {
-      RTC_LOG(LS_WARNING) << "More than 2 blocks in packet not supported.";
+      // RTC_LOG(LS_WARNING) << "More than 2 blocks in packet not supported.";
       return -1;
     }
     // Check that the packet is long enough to contain data in the following
     // block.
     if (block_length > payload_data_length - (red_header_length + 1)) {
-      RTC_LOG(LS_WARNING) << "Block length longer than packet.";
+      // RTC_LOG(LS_WARNING) << "Block length longer than packet.";
       return -1;
     }
   }
   ++packet_counter_.num_packets;
   if (packet_counter_.first_packet_time_ms == -1) {
-    packet_counter_.first_packet_time_ms =
-        Clock::GetRealTimeClock()->TimeInMilliseconds();
+    // packet_counter_.first_packet_time_ms =
+    //     Clock::GetRealTimeClock()->TimeInMilliseconds();
   }
 
   std::unique_ptr<ForwardErrorCorrection::ReceivedPacket>
@@ -223,7 +224,7 @@ int32_t UlpfecReceiverImpl::AddReceivedRedPacket(
 
 // TODO(nisse): Drop always-zero return value.
 int32_t UlpfecReceiverImpl::ProcessReceivedFec() {
-  crit_sect_.Enter();
+  // crit_sect_.Enter();
 
   // If we iterate over |received_packets_| and it contains a packet that cause
   // us to recurse back to this function (for example a RED packet encapsulating
@@ -240,10 +241,10 @@ int32_t UlpfecReceiverImpl::ProcessReceivedFec() {
     // Send received media packet to VCM.
     if (!received_packet->is_fec) {
       ForwardErrorCorrection::Packet* packet = received_packet->pkt;
-      crit_sect_.Leave();
+      // crit_sect_.Leave();
       recovered_packet_callback_->OnRecoveredPacket(packet->data,
                                                     packet->length);
-      crit_sect_.Enter();
+      // crit_sect_.Enter();
     }
     fec_->DecodeFec(*received_packet, &recovered_packets_);
   }
@@ -259,12 +260,12 @@ int32_t UlpfecReceiverImpl::ProcessReceivedFec() {
     // Set this flag first; in case the recovered packet carries a RED
     // header, OnRecoveredPacket will recurse back here.
     recovered_packet->returned = true;
-    crit_sect_.Leave();
+    // crit_sect_.Leave();
     recovered_packet_callback_->OnRecoveredPacket(packet->data, packet->length);
-    crit_sect_.Enter();
+    // crit_sect_.Enter();
   }
 
-  crit_sect_.Leave();
+  // crit_sect_.Leave();
   return 0;
 }
 
