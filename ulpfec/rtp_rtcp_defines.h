@@ -231,18 +231,18 @@ const uint8_t kRtpHeaderSize = 12;
 //                                        size_t payload_size,
 //                                        const WebRtcRTPHeader* rtp_header) = 0;
 //};
-//
-//// Callback interface for packets recovered by FlexFEC or ULPFEC. In
-//// the FlexFEC case, the implementation should be able to demultiplex
-//// the recovered RTP packets based on SSRC.
-//class RecoveredPacketReceiver {
-// public:
-//  virtual void OnRecoveredPacket(const uint8_t* packet, size_t length) = 0;
-//
-// protected:
-//  virtual ~RecoveredPacketReceiver() = default;
-//};
-//
+
+// Callback interface for packets recovered by FlexFEC or ULPFEC. In
+// the FlexFEC case, the implementation should be able to demultiplex
+// the recovered RTP packets based on SSRC.
+class RecoveredPacketReceiver {
+public:
+ virtual void OnRecoveredPacket(const uint8_t* packet, size_t length) = 0;
+
+protected:
+ virtual ~RecoveredPacketReceiver() = default;
+};
+
 //class RtcpIntraFrameObserver {
 // public:
 //  virtual ~RtcpIntraFrameObserver() {}
