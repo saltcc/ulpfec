@@ -16,7 +16,11 @@ struct Packet {
     bool marker_bit;
 };
 
-int main()
+class DummyCallback : public RecoveredPacketReceiver {
+  void OnRecoveredPacket(const uint8_t* packet, size_t length) override {}
+};
+
+void TestFecGenerator()
 {
     UlpfecGenerator ulpfec_generator_;
     std::vector<Packet> protected_packets;
@@ -49,6 +53,32 @@ int main()
                                                         kFecPayloadType, 100);
             printf("num_fec_packets:%d, fec_packets.size:%d\n", num_fec_packets, fec_packets.size());
         }
+    }
+}
+
+void TestFecReceiver(const uint8_t* data, size_t size)
+{
+
+}
+
+int main()
+{
+    const char *filename = "rtp.raw";
+    FILE *fp = fopen(filename, "rb");
+    if (fp == NULL){
+        printf("fp null\n");
+        return 0;
+    }
+    while (!feof(fp)){
+        uint16_t data_len = 0;
+        fread(&data_len, 2, 1, fp);
+        if (data_len == 0){
+            printf("break\n");
+            break;
+        }
+        printf("data len : %d\n", data_len);
+        uint8_t payload[1024];
+        fread(payload, data_len, 1, fp);
     }
     return 0;
 }
