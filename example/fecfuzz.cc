@@ -47,7 +47,7 @@ class DummyCallback : public RecoveredPacketReceiver {
         RTPHeader header;
         RtpHeaderParse(header, packet, length);
         printf("seq:%d, count:%d\n", header.sequenceNumber, dumpcount++);
-        //PrintHexValue("dump", header.sequenceNumber, packet + 12, length - 12);
+        PrintHexValue("dump", header.sequenceNumber, packet + 12, length - 12);
     }
 };
 
@@ -122,8 +122,17 @@ void SendToNetWork(std::unique_ptr<uint8_t[]> packet, size_t size)
     if (receiver_->AddReceivedRedPacket(parsed_header, packet.get(), size, ulpfec_payload_type_) != 0) {
         return;
     }
-    printf("zzzzzzzz\n");
     receiver_->ProcessReceivedFec();
+}
+
+std::unique_ptr<uint8_t[]> BuildRedPayload(uint8_t *media, size_t size)
+{
+    std::unique_ptr<uint8_t[]> red_packet(new uint8_t[size + 1]);
+    memcpy(red_packet.get(), media, 12);
+    red_packet.get()[12] = media_payload_type_;
+    memcpy(red_packet.get() + 13, media + 12, size - 12);
+
+    return std::move(red_packet);
 }
 
 void TestFecGen(uint8_t *data, size_t size)
@@ -145,22 +154,21 @@ void TestFecGen(uint8_t *data, size_t size)
     SetSequenceNumber(media_packet.get(), seq_no_++);
     SetSsrc(media_packet.get(), ssrc_);
 
-    std::unique_ptr<uint8_t[]> red_packet(new uint8_t[size]);
-    memcpy(red_packet.get(), media_packet.get(), size);
+    std::unique_ptr<uint8_t[]> red_packet = BuildRedPayload(media_packet.get(), size);
     SetPayloadType(red_packet.get(), red_payload_type_);
 
     ulpfec_generator_.AddRtpPacketAndGenerateFec(media_packet.get(), size - 12, 12);
     size_t num_fec_packets = ulpfec_generator_.NumAvailableFecPackets();
     if (num_fec_packets > 0) {
-        //printf("num_fec_packets:%d\n", num_fec_packets);
+        printf("num_fec_packets:%d\n", num_fec_packets);
         fec_packets = ulpfec_generator_.GetUlpfecPacketsAsRed(red_payload_type_, ulpfec_payload_type_, seq_no_);
     }
 
     static int32_t sumicast_lost = 1;
     if (sumicast_lost++ % 4 != 0) {
-        SendToNetWork(std::move(red_packet), size);
+        SendToNetWork(std::move(red_packet), size + 1);
     } else {
-        //PrintHexValue("loss", seq_no_ - 1, media_packet.get(), size - 12);
+        PrintHexValue("loss", seq_no_ - 1, media_packet.get() + 12, size - 12);
     }
 
     for (const auto &fec_packet : fec_packets) {
