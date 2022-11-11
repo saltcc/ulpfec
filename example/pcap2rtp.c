@@ -113,5 +113,5 @@ void pcap_file_parse(const char *filename)
 
 int main()
 {
-    pcap_file_parse("./amrwb.pcap");
+    pcap_file_parse("./test.pcap");
 }
